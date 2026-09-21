@@ -43,3 +43,13 @@ jobs:
           git add data/
           git diff --quiet && git diff --staged --quiet || git commit -m "paper data $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           git push
+
+      - name: Generate Run Summary
+        if: always()
+        run: |
+          echo "### Paper Trading Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/summary.md ]; then
+            cat data/summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No settled positions yet." >> $GITHUB_STEP_SUMMARY
+          fi
