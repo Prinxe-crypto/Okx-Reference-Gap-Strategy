@@ -1,3 +1,30 @@
+name: dual-paper
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"      # every 15 min (GitHub may start it a few minutes late)
+  workflow_dispatch:            # lets you press "Run workflow" to test
+
+permissions:
+  contents: write               # needed to commit the CSVs back
+
+concurrency:
+  group: dual-paper
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
       - name: Paper trade for ~3 minutes, settle old positions
         env:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
@@ -5,16 +32,17 @@
           OKX_API_PASSPHRASE: ${{ secrets.OKX_API_PASSPHRASE }}
         run: python okx_kalshi_dual_paper_v2.py --dir data --loop 20 --max-seconds 180
 
-      # ADD THIS STEP HERE
       - name: Generate summary report
         if: always()
         run: |
           echo "## Paper Trading Summary" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          python okx_kalshi_dual_paper_v2.py --summary --dir data >> $GITHUB_STEP_SUMMARY 2>&1
+          python okx_kalshi_dual_paper_v2.py --summary --dir data >> $GITHUB_STEP_SUMMARY 2>&1 || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Commit results
         run: |
           git config user.name "paper-bot"
-          ...
+          git config user.email "paper-bot@users.noreply.github.com"
+          git add data okx_settle_debug.jsonl 2>/dev/null || git add data
+          git diff --cached --quiet || (git commit -m "paper data $(date -u +%FT%TZ)" && git pull --rebase && git push)
