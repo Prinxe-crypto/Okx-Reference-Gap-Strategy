@@ -1,46 +1,45 @@
 name: dual-paper
 
 on:
-  workflow_dispatch:            # Triggered by cron-job.org or manual button
+  workflow_dispatch: # Triggered by cron-job.org or manually
+  schedule:
+    - cron: '*/15' # Fallback cron run every 15 minutes
 
 permissions:
-  contents: write               # Required to commit CSV updates back to the repo
-
-concurrency:
-  group: dual-paper
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  run:
+  paper-trade:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.11'
 
-      - run: pip install requests
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Paper trade for ~1 minute
         env:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
-          OKX_API_SECRET: ${{ secrets.OKX_API_SECRET }}
-          OKX_API_PASSPHRASE: ${{ secrets.OKX_API_PASSPHRASE }}
-        run: python okx_kalshi_dual_paper_v2.py --dir data --loop 20 --max-seconds 90
-
-      - name: Generate summary report
-        if: always()
+          OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
+          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
+          KALSHI_EMAIL: ${{ secrets.KALSHI_EMAIL }}
+          KALSHI_PASSWORD: ${{ secrets.KALSHI_PASSWORD }}
         run: |
-          echo "## Paper Trading Summary" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          python okx_kalshi_dual_paper_v2.py --summary --dir data >> $GITHUB_STEP_SUMMARY 2>&1 || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          python okx_kalshi_dual_paper_v2.py --entry 0.90
 
-      - name: Commit results
+      - name: Commit paper trading data and logs
         run: |
-          git config user.name "paper-bot"
-          git config user.email "paper-bot@users.noreply.github.com"
-          git add data okx_settle_debug.jsonl 2>/dev/null || git add data
-          git diff --cached --quiet || (git commit -m "paper data $(date -u +%FT%TZ)" && git pull --rebase && git push)
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --quiet && git diff --staged --quiet || git commit -m "paper data $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push
