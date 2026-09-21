@@ -29,8 +29,8 @@ jobs:
       - name: Paper trade for ~1 minute
         env:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
-          OKX_API_SECRET: ${{ secrets.OKX_SECRET_KEY }}
-          OKX_API_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
+          OKX_API_SECRET: ${{ secrets.OKX_API_SECRET }}
+          OKX_API_PASSPHRASE: ${{ secrets.OKX_API_PASSPHRASE }}
           KALSHI_EMAIL: ${{ secrets.KALSHI_EMAIL }}
           KALSHI_PASSWORD: ${{ secrets.KALSHI_PASSWORD }}
         run: |
