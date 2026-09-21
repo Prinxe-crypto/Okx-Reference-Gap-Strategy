@@ -3,7 +3,7 @@ name: dual-paper
 on:
   workflow_dispatch: # Triggered by cron-job.org or manually
   schedule:
-    - cron: '*/15' # Fallback cron run every 15 minutes
+    - cron: '*/15 * * * *' # Fallback cron run every 15 minutes
 
 permissions:
   contents: write
