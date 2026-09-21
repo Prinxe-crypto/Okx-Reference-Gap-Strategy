@@ -1,9 +1,7 @@
 name: dual-paper
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"      # Triggers every 15 minutes
-  workflow_dispatch:            # Allows manual triggers via the Actions tab
+  workflow_dispatch:            # Triggered by cron-job.org or manual button
 
 permissions:
   contents: write               # Required to commit CSV updates back to the repo
@@ -15,7 +13,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 15         # Prevents job timeouts
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -25,13 +23,12 @@ jobs:
 
       - run: pip install requests
 
-      # Keeps running every 20 seconds for 14 minutes (840s)
-      - name: Paper trade continuously for 14 minutes
+      - name: Paper trade for ~1 minute
         env:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_API_SECRET: ${{ secrets.OKX_API_SECRET }}
           OKX_API_PASSPHRASE: ${{ secrets.OKX_API_PASSPHRASE }}
-        run: python okx_kalshi_dual_paper_v2.py --dir data --loop 20 --max-seconds 840
+        run: python okx_kalshi_dual_paper_v2.py --dir data --loop 20 --max-seconds 90
 
       - name: Generate summary report
         if: always()
